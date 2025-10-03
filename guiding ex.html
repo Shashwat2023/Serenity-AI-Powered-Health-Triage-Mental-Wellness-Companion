@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Serenity - Breathing & Meditation Coach</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0a4d3c 0%, #1a5f4f 50%, #2a7d6a 100%);
+      color: #ffffff;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    .content-wrapper {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Navigation */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 3rem;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+      font-family: 'Poppins', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #91F291;
+      text-decoration: none;
+      letter-spacing: 1px;
+      text-shadow: 0 0 20px rgba(145, 242, 145, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    .logo:hover {
+      transform: scale(1.05);
+      text-shadow: 0 0 30px rgba(145, 242, 145, 0.8);
+    }
+
+    .home-btn {
+      padding: 0.8rem 1.8rem;
+      background: rgba(145, 242, 145, 0.2);
+      color: #91F291;
+      border: 2px solid #91F291;
+      border-radius: 50px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      font-size: 0.95rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .home-btn:hover {
+      background: #91F291;
+      color: #0a4d3c;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(145, 242, 145, 0.4);
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 3rem auto;
+      padding: 0 20px;
+    }
+
+    /* Welcome Hero Section */
+    .hero-section {
+      text-align: center;
+      padding: 4rem 2rem;
+      opacity: 0;
+      animation: fadeIn 1s ease forwards;
+    }
+
+    .hero-section h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: #91F291;
+      margin-bottom: 1rem;
+      text-shadow: 0 0 30px rgba(145, 242, 145, 0.5);
+      animation: glow 2s ease-in-out infinite;
+    }
+
+    .hero-section p {
+      font-size: 1.3rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 2rem;
+      line-height: 1.8;
+    }
+
+    @keyframes glow {
+      0%, 100% {
+        text-shadow: 0 0 30px rgba(145, 242, 145, 0.5);
+      }
+      50% {
+        text-shadow: 0 0 50px rgba(145, 242, 145, 0.8), 0 0 70px rgba(97, 242, 194, 0.6);
+      }
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border-radius: 25px;
+      padding: 2rem;
+      margin-bottom: 3rem;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      opacity: 0;
+      animation: fadeIn 0.8s ease 0.3s forwards;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .progress-text {
+      font-weight: 600;
+      color: #91F291;
+      font-size: 1.1rem;
+    }
+
+    .progress-steps {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #91F291, #61F2C2, #91F291);
+      background-size: 200% 100%;
+      border-radius: 10px;
+      transition: width 0.6s ease;
+      box-shadow: 0 0 20px rgba(97, 242, 194, 0.8);
+      animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Exercise Card */
+    .exercise-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(30px);
+      border-radius: 30px;
+      padding: 4rem 3rem;
+      box-shadow: 0 15px 60px rgba(0, 0, 0, 0.4);
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      opacity: 0;
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    .exercise-card h2 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 2.5rem;
+      color: #91F291;
+      margin-bottom: 2rem;
+      text-shadow: 0 0 20px rgba(145, 242, 145, 0.4);
+      animation: fadeIn 0.8s ease 0.3s forwards;
+      opacity: 0;
+    }
+
+    .exercise-card p {
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.9;
+      margin-bottom: 3rem;
+      animation: fadeIn 0.8s ease 0.5s forwards;
+      opacity: 0;
+    }
+
+    /* Breathing Circle Animation */
+    .breathing-circle-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 4rem 0;
+      height: 350px;
+    }
+
+    .breathing-circle {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #91F291, #61F2C2);
+      box-shadow: 0 0 60px rgba(97, 242, 194, 0.8), 0 0 100px rgba(145, 242, 145, 0.5);
+      animation: breathe 4s ease-in-out infinite;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .breathing-circle::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #91F291, #61F2C2);
+      opacity: 0.4;
+      animation: breathePulse 4s ease-in-out infinite;
+    }
+
+    .breathing-circle::after {
+      content: '';
+      position: absolute;
+      width: 120%;
+      height: 120%;
+      border-radius: 50%;
+      border: 2px solid rgba(145, 242, 145, 0.3);
+      animation: breatheRing 4s ease-in-out infinite;
+    }
+
+    .breathing-text {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0a4d3c;
+      z-index: 10;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    @keyframes breathe {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 60px rgba(97, 242, 194, 0.8), 0 0 100px rgba(145, 242, 145, 0.5);
+      }
+      50% {
+        transform: scale(2);
+        box-shadow: 0 0 100px rgba(97, 242, 194, 1), 0 0 150px rgba(145, 242, 145, 0.8);
+      }
+    }
+
+    @keyframes breathePulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.4;
+      }
+      50% {
+        transform: scale(2.5);
+        opacity: 0;
+      }
+    }
+
+    @keyframes breatheRing {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.5;
+      }
+      50% {
+        transform: scale(2.8);
+        opacity: 0;
+      }
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 1.2rem 3rem;
+      background: linear-gradient(135deg, #91F291, #61F2C2);
+      color: #0a4d3c;
+      border: none;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 30px rgba(97, 242, 194, 0.5);
+      position: relative;
+      overflow: hidden;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.4);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn:hover::before {
+      width: 400px;
+      height: 400px;
+    }
+
+    .btn:hover {
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: 0 15px 50px rgba(97, 242, 194, 0.7);
+    }
+
+    .btn:active {
+      transform: translateY(-2px) scale(1.02);
+    }
+
+    .btn-start {
+      font-size: 1.3rem;
+      padding: 1.5rem 4rem;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    /* Completion Card */
+    .takeaway-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(30px);
+      border-radius: 30px;
+      padding: 4rem 3rem;
+      box-shadow: 0 15px 60px rgba(0, 0, 0, 0.4);
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      opacity: 0;
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    .completion-icon {
+      font-size: 5rem;
+      margin-bottom: 2rem;
+      animation: bounce 1.5s ease infinite;
+      filter: drop-shadow(0 0 20px rgba(145, 242, 145, 0.6));
+    }
+
+    .takeaway-card h2 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 2.8rem;
+      color: #91F291;
+      margin-bottom: 2rem;
+      text-shadow: 0 0 30px rgba(145, 242, 145, 0.5);
+    }
+
+    .takeaway-card p {
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.9;
+      margin-bottom: 2rem;
+    }
+
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0) rotate(0deg);
+      }
+      25% {
+        transform: translateY(-20px) rotate(-5deg);
+      }
+      75% {
+        transform: translateY(-10px) rotate(5deg);
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      nav {
+        padding: 1rem 1.5rem;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+      }
+
+      .hero-section h1 {
+        font-size: 2.5rem;
+      }
+
+      .hero-section p {
+        font-size: 1.1rem;
+      }
+
+      .container {
+        padding: 0 1rem;
+      }
+
+      .exercise-card, .takeaway-card {
+        padding: 2rem 1.5rem;
+      }
+
+      .breathing-circle {
+        width: 140px;
+        height: 140px;
+      }
+
+      .exercise-card h2 {
+        font-size: 2rem;
+      }
+
+      .btn-start {
+        font-size: 1.1rem;
+        padding: 1.2rem 2.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <div class="content-wrapper">
+    <nav>
+      <a href="#" class="logo">🍃 Serenity</a>
+      <a href="#" class="home-btn">Home</a>
+    </nav>
+
+    <div class="container">
+      <!-- Progress Bar -->
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-header">
+          <span class="progress-text">Your Journey</span>
+          <span class="progress-steps"><span id="currentStep">0</span> / <span id="totalSteps">9</span></span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Welcome Screen -->
+      <div id="welcome-screen">
+        <div class="hero-section">
+          <h1>Welcome to Serenity</h1>
+          <p>Embark on a transformative journey through breathing exercises and guided meditation. <br>Find your inner peace, one breath at a time.</p>
+          <button class="btn btn-start" id="startBtn">Begin Your Journey</button>
+        </div>
+      </div>
+
+      <!-- Exercise Screen -->
+      <div id="exercise-screen" class="hidden">
+        <div class="exercise-card">
+          <h2 id="exerciseName"></h2>
+          <p id="exercisePrompt"></p>
+          
+          <div class="breathing-circle-container">
+            <div class="breathing-circle">
+              <span class="breathing-text" id="breathText">Breathe</span>
+            </div>
+          </div>
+
+          <button class="btn" id="nextBtn">Continue →</button>
+        </div>
+      </div>
+
+      <!-- End Screen -->
+      <div id="end-screen" class="hidden">
+        <div class="takeaway-card">
+          <div class="completion-icon">✨</div>
+          <h2>Journey Complete!</h2>
+          <p>Congratulations on completing your meditation journey. You've taken an important step toward mindfulness and inner peace.</p>
+          <p style="font-weight: 600; color: #91F291; font-size: 1.3rem; margin-top: 2rem;">Stay present. Stay peaceful. 🧘‍♀️</p>
+          <button class="btn" style="margin-top: 2rem;" onclick="location.reload()">Start New Session</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Three.js 3D Background Scene
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0);
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+    
+    camera.position.z = 50;
+
+    // Create leaf geometry
+    function createLeafShape() {
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      shape.quadraticCurveTo(2, 1, 3, 3);
+      shape.quadraticCurveTo(2, 5, 0, 6);
+      shape.quadraticCurveTo(-2, 5, -3, 3);
+      shape.quadraticCurveTo(-2, 1, 0, 0);
+      return shape;
+    }
+    
+    const leafShape = createLeafShape();
+    const extrudeSettings = { depth: 0.3, bevelEnabled: true, bevelThickness: 0.15, bevelSize: 0.1 };
+    const leafGeometry = new THREE.ExtrudeGeometry(leafShape, extrudeSettings);
+    
+    // Leaf colors
+    const leafColors = [0x91F291, 0x61F2C2, 0x7FD957, 0x52C77D, 0x3FD68A, 0x2FA876];
+    
+    const leaves = [];
+    const leafCount = 50;
+    
+    for (let i = 0; i < leafCount; i++) {
+      const material = new THREE.MeshPhongMaterial({ 
+        color: leafColors[Math.floor(Math.random() * leafColors.length)],
+        shininess: 50,
+        transparent: true,
+        opacity: 0.6,
+        emissive: leafColors[Math.floor(Math.random() * leafColors.length)],
+        emissiveIntensity: 0.2
+      });
+      
+      const leaf = new THREE.Mesh(leafGeometry, material);
+      
+      leaf.position.x = Math.random() * 120 - 60;
+      leaf.position.y = Math.random() * 100 + 60;
+      leaf.position.z = Math.random() * 80 - 40;
+      
+      leaf.rotation.x = Math.random() * Math.PI;
+      leaf.rotation.y = Math.random() * Math.PI;
+      leaf.rotation.z = Math.random() * Math.PI;
+      
+      const scale = Math.random() * 0.6 + 0.4;
+      leaf.scale.set(scale, scale, scale);
+      
+      leaf.userData = {
+        fallSpeed: Math.random() * 0.015 + 0.008,
+        swaySpeed: Math.random() * 0.015 + 0.01,
+        rotationSpeed: {
+          x: (Math.random() - 0.5) * 0.015,
+          y: (Math.random() - 0.5) * 0.015,
+          z: (Math.random() - 0.5) * 0.015
+        }
+      };
+      
+      leaves.push(leaf);
+      scene.add(leaf);
+    }
+
+    // Add floating particles
+    const particleGeometry = new THREE.BufferGeometry();
+    const particleCount = 200;
+    const positions = new Float32Array(particleCount * 3);
+    
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      positions[i] = Math.random() * 200 - 100;
+      positions[i + 1] = Math.random() * 200 - 100;
+      positions[i + 2] = Math.random() * 100 - 50;
+    }
+    
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const particleMaterial = new THREE.PointsMaterial({
+      color: 0x91F291,
+      size: 0.5,
+      transparent: true,
+      opacity: 0.6,
+      blending: THREE.AdditiveBlending
+    });
+    
+    const particles = new THREE.Points(particleGeometry, particleMaterial);
+    scene.add(particles);
+    
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0x91F291, 0.8);
+    directionalLight.position.set(10, 15, 10);
+    scene.add(directionalLight);
+    
+    const directionalLight2 = new THREE.DirectionalLight(0x61F2C2, 0.5);
+    directionalLight2.position.set(-10, -15, -10);
+    scene.add(directionalLight2);
+
+    const pointLight = new THREE.PointLight(0x91F291, 1, 100);
+    pointLight.position.set(0, 0, 30);
+    scene.add(pointLight);
+    
+    // Animation
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      leaves.forEach(leaf => {
+        leaf.position.y -= leaf.userData.fallSpeed;
+        leaf.position.x += Math.sin(Date.now() * leaf.userData.swaySpeed * 0.001) * 0.03;
+        
+        leaf.rotation.x += leaf.userData.rotationSpeed.x;
+        leaf.rotation.y += leaf.userData.rotationSpeed.y;
+        leaf.rotation.z += leaf.userData.rotationSpeed.z;
+        
+        if (leaf.position.y < -70) {
+          leaf.position.y = Math.random() * 30 + 70;
+          leaf.position.x = Math.random() * 120 - 60;
+        }
+      });
+
+      particles.rotation.y += 0.0002;
+      const positions = particles.geometry.attributes.position.array;
+      for (let i = 1; i < positions.length; i += 3) {
+        positions[i] -= 0.02;
+        if (positions[i] < -100) {
+          positions[i] = 100;
+        }
+      }
+      particles.geometry.attributes.position.needsUpdate = true;
+      
+      renderer.render(scene, camera);
+    }
+    
+    animate();
+    
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Meditation App Logic
+    const exercises = [
+      { 
+        name: "Exhale Breath", 
+        prompt: "Let's start with an exhale-focused breath. Inhale gently through your nose, then exhale fully through your mouth. Follow the circle's rhythm." 
+      },
+      { 
+        name: "Abdominal Breathing", 
+        prompt: "Now let's try diaphragmatic breathing. Place one hand on your belly. Breathe deeply so your belly rises with each inhale." 
+      },
+      { 
+        name: "Breath Focus", 
+        prompt: "Focus your complete attention on your breath's journey — notice the cool air entering, the pause, and the warm air leaving." 
+      },
+      { 
+        name: "Equal Breath", 
+        prompt: "Make your inhale and exhale equal in length. Try counting to 4 as you breathe in, then 4 as you breathe out." 
+      },
+      { 
+        name: "Resonant Breath", 
+        prompt: "Practice resonant breathing — aim for 5-6 breaths per minute. This creates harmony between your breath, heart, and mind." 
+      },
+      { 
+        name: "Yoga Breaths", 
+        prompt: "Let's explore yogic breathing. Take long, slow breaths through your nose. Feel the energy flow through your entire being." 
+      },
+      { 
+        name: "Lion's Breath", 
+        prompt: "Time for Lion's Breath! Inhale deeply through your nose, then exhale powerfully with a 'HA' sound. Release all tension!" 
+      },
+      { 
+        name: "Alternate Nostril", 
+        prompt: "Practice Nadi Shodhana. Gently close one nostril, inhale through the other, then switch and exhale. This balances your energy." 
+      },
+      { 
+        name: "Guided Meditation", 
+        prompt: "Now let's rest in peaceful meditation. Allow your breath to flow naturally. You are present. You are calm. You are here." 
+      }
+    ];
+
+    let currentStep = -1;
+    const totalSteps = exercises.length;
+
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const exerciseScreen = document.getElementById('exercise-screen');
+    const endScreen = document.getElementById('end-screen');
+    const progressFill = document.getElementById('progressFill');
+    const currentStepEl = document.getElementById('currentStep');
+    const totalStepsEl = document.getElementById('totalSteps');
+    const breathText = document.getElementById('breathText');
+
+    totalStepsEl.textContent = totalSteps;
+
+    document.getElementById('startBtn').addEventListener('click', startNextExercise);
+    document.getElementById('nextBtn').addEventListener('click', startNextExercise);
+
+    // Animate breathing text
+    setInterval(() => {
+      if (!exerciseScreen.classList.contains('hidden')) {
+        breathText.textContent = breathText.textContent === 'INHALE' ? 'EXHALE' : 'INHALE';
+      }
+    }, 4000);
+
+    function updateProgress() {
+      const progress = ((currentStep + 1) / totalSteps) * 100;
+      progressFill.style.width = progress + '%';
+      currentStepEl.textContent = currentStep + 1;
+    }
+
+    function startNextExercise() {
+      currentStep++;
+      if (currentStep < exercises.length) {
+        showExercise(currentStep);
+        updateProgress();
+      } else {
+        showEnd();
+      }
+    }
+
+    function showExercise(idx) {
+      welcomeScreen.classList.add('hidden');
+      exerciseScreen.classList.remove('hidden');
+      endScreen.classList.add('hidden');
+
+      const exercise = exercises[idx];
+      document.getElementById('exerciseName').textContent = exercise.name;
+      document.getElementById('exercisePrompt').textContent = exercise.prompt;
+    }
+
+    function showEnd() {
+      exerciseScreen.classList.add('hidden');
+      endScreen.classList.remove('hidden');
+      progressFill.style.width = '100%';
+      currentStepEl.textContent = totalSteps;
+    }
+  </script>
+</body>
+</html>

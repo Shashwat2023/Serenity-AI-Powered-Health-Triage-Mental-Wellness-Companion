@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serenity - Live Counsellors</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #f0fdf4 0%, #e0f9f5 100%);
+    color: #1e293b;
+    min-height: 100vh;
+}
+
+/* Navigation */
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem 3rem;
+    background: linear-gradient(135deg, #91F291 0%, #61F2C2 100%);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #0f172a;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.logo:hover {
+    transform: scale(1.05);
+    color: #1e3a8a;
+}
+
+.home-btn {
+    padding: 0.7rem 1.5rem;
+    background: white;
+    color: #0f172a;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+.home-btn:hover {
+    background: #0f172a;
+    color: white;
+    border-color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Header */
+header {
+    text-align: center;
+    padding: 2.5rem 2rem;
+}
+
+header h1 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+}
+
+header p {
+    font-size: 1.1rem;
+    color: #475569;
+}
+
+/* Filters */
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    background: rgba(145, 242, 145, 0.2);
+    border-radius: 15px;
+    margin: 0 2rem 2rem;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+}
+
+.filters input, .filters select {
+    padding: 0.7rem 1.2rem;
+    border-radius: 10px;
+    border: 2px solid #61F2C2;
+    outline: none;
+    font-size: 0.95rem;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.filters input:focus, .filters select:focus {
+    border-color: #91F291;
+    box-shadow: 0 0 0 3px rgba(145, 242, 145, 0.2);
+}
+
+.price-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rangeVal {
+    font-weight: 700;
+    color: #0f172a;
+    min-width: 60px;
+}
+
+/* Favorites Section */
+.favorites-section {
+    margin: 0 2rem 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(145, 242, 145, 0.15), rgba(97, 242, 194, 0.15));
+    border-radius: 15px;
+    border: 2px solid #91F291;
+}
+
+.favorites-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.favorites-header h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.5rem;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.fav-count {
+    background: #91F291;
+    color: #0f172a;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.favorites-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+.favorites-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.favorites-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+}
+
+.favorites-container::-webkit-scrollbar-thumb {
+    background: #61F2C2;
+    border-radius: 10px;
+}
+
+/* Counsellors Section */
+.counsellors-section {
+    margin: 0 2rem 3rem;
+}
+
+.section-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.8rem;
+    color: #0f172a;
+    margin-bottom: 1.5rem;
+    padding-left: 0.5rem;
+}
+
+.scroll-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 2rem;
+    padding: 1.5rem 0.5rem;
+    scroll-behavior: smooth;
+}
+
+.scroll-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.scroll-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+    background: #91F291;
+    border-radius: 10px;
+}
+
+/* Card */
+.card {
+    min-width: 320px;
+    max-width: 340px;
+    flex: 0 0 auto;
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    position: relative;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    scroll-snap-align: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(97, 242, 194, 0.3);
+    border: 2px solid #61F2C2;
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+}
+
+/* Profile Image Container */
+.profile-container {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 1.2rem;
+}
+
+.card img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border: 4px solid #61F2C2;
+    transition: all 0.3s ease;
+}
+
+.card:hover img {
+    box-shadow: 0 12px 35px rgba(97, 242, 194, 0.4);
+    transform: scale(1.05);
+}
+
+/* Badge on Profile Image */
+.status-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+.status-badge.available {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.status-badge.busy {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* Favorite Icon */
+.favorite {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 1.8rem;
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.favorite:hover {
+    transform: scale(1.2);
+}
+
+.favorite.active {
+    color: #ef4444;
+    transform: scale(1.3);
+}
+
+/* Name & Specialty */
+.card h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.card:hover h2 {
+    color: #059669;
+}
+
+.specialty {
+    font-size: 1rem;
+    color: #64748b;
+    margin-bottom: 0.8rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.card:hover .specialty {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+/* Rating */
+.rating {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    color: #fbbf24;
+    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.card:hover .rating {
+    transform: scale(1.1);
+    color: #f59e0b;
+}
+
+.rating-value {
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-left: 0.3rem;
+}
+
+/* Experience & Price */
+.experience {
+    font-size: 0.9rem;
+    color: #475569;
+    margin-bottom: 0.8rem;
+}
+
+.price {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #059669;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.card:hover .price {
+    color: #10b981;
+    font-size: 1.4rem;
+}
+
+/* Bio (Hidden by default, shown on hover) */
+.bio {
+    font-size: 0.9rem;
+    color: #475569;
+    line-height: 1.6;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid #e2e8f0;
+    text-align: left;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.4s ease;
+}
+
+.card:hover .bio {
+    max-height: 200px;
+    opacity: 1;
+}
+
+/* Book Button */
+.bookBtn {
+    margin-top: 1rem;
+    padding: 0.9rem 2rem;
+    width: 100%;
+    background: linear-gradient(135deg, #91F291, #61F2C2);
+    color: #0f172a;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(97, 242, 194, 0.3);
+}
+
+.bookBtn:hover {
+    background: linear-gradient(135deg, #61F2C2, #91F291);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(97, 242, 194, 0.5);
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 25px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 2rem;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.close:hover {
+    color: #ef4444;
+    transform: rotate(90deg);
+}
+
+.modal-content img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border: 4px solid #61F2C2;
+}
+
+.modal-content h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.8rem;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+}
+
+.modal-content p {
+    margin: 0.5rem 0;
+    color: #475569;
+    font-size: 1rem;
+}
+
+.booking-details {
+    background: linear-gradient(135deg, rgba(145, 242, 145, 0.2), rgba(97, 242, 194, 0.2));
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin: 1.5rem 0;
+    text-align: left;
+}
+
+.booking-details h3 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.2rem;
+    color: #0f172a;
+    margin-bottom: 1rem;
+}
+
+.booking-details p {
+    display: flex;
+    justify-content: space-between;
+    margin: 0.5rem 0;
+    font-weight: 500;
+}
+
+.booking-details .label {
+    color: #64748b;
+}
+
+.booking-details .value {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.modal-content .bookBtn {
+    margin-top: 1.5rem;
+}
+
+/* Toast */
+.toast {
+    visibility: hidden;
+    min-width: 300px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    text-align: center;
+    border-radius: 15px;
+    padding: 1.2rem;
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1100;
+    opacity: 0;
+    transition: all 0.5s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    font-weight: 600;
+}
+
+.toast.show {
+    visibility: visible;
+    opacity: 1;
+    bottom: 50px;
+}
+
+.empty-message {
+    text-align: center;
+    color: #64748b;
+    padding: 2rem;
+    font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    nav {
+        padding: 1rem 1.5rem;
+    }
+    
+    .logo {
+        font-size: 1.4rem;
+    }
+    
+    header h1 {
+        font-size: 2rem;
+    }
+    
+    .filters {
+        margin: 0 1rem 1.5rem;
+    }
+    
+    .counsellors-section, .favorites-section {
+        margin: 0 1rem 2rem;
+    }
+    
+    .card {
+        min-width: 280px;
+    }
+}
+</style>
+</head>
+<body>
+
+<nav>
+    <a href="#" class="logo">Serenity</a>
+    <a href="#" class="home-btn"><i class="fas fa-home"></i> Go to Home</a>
+</nav>
+
+<header>
+    <h1>Find Your Expert Counsellor </h1>
+    <p>Trusted professionals ready to support your mental wellness journey</p>
+</header>
+
+<div class="filters">
+    <input type="text" id="search" placeholder="🔍 Search by name or specialty">
+    <select id="specialtyFilter">
+        <option value="">All Specialties</option>
+    </select>
+    <select id="sortFilter">
+        <option value="default">Sort By: Recommended</option>
+        <option value="rating">Rating (Highest)</option>
+        <option value="priceAsc">Price (Lowest)</option>
+        <option value="priceDesc">Price (Highest)</option>
+    </select>
+    <div class="price-filter-group">
+        <label>Max Price: ₹<span class="rangeVal" id="rangeVal">2000</span></label>
+        <input type="range" id="priceFilter" min="0" max="2000" value="2000" step="100">
+    </div>
+</div>
+
+<div class="favorites-section" id="favoritesSection" style="display:none;">
+    <div class="favorites-header">
+        <h2><i class="fas fa-heart"></i> My Favorites <span class="fav-count" id="favCount">0</span></h2>
+    </div>
+    <div class="favorites-container" id="favoritesList"></div>
+</div>
+
+<section class="counsellors-section">
+    <h2 class="section-title">Available Counsellors</h2>
+    <div class="scroll-container" id="counsellorList"></div>
+</section>
+
+<div class="modal" id="counsellorModal">
+    <div class="modal-content">
+        <span class="close" id="closeModal">&times;</span>
+        <img id="modalImg" src="" alt="Counsellor">
+        <h2 id="modalName"></h2>
+        <p id="modalSpecialty"></p>
+        <div class="rating" id="modalRating"></div>
+        <p id="modalExperience"></p>
+        
+        <div class="booking-details">
+            <h3>📋 Booking Details</h3>
+            <p><span class="label">Session Fee:</span> <span class="value price" id="modalPrice"></span></p>
+            <p><span class="label">Duration:</span> <span class="value">60 minutes</span></p>
+            <p><span class="label">Mode:</span> <span class="value">Video Call</span></p>
+            <p id="modalBio" style="display: block; margin-top: 1rem; text-align: left;"></p>
+        </div>
+        
+        <button class="bookBtn" id="confirmBookingBtn">✓ Confirm Booking</button>
+    </div>
+</div>
+
+<div class="toast" id="toast">✓ Session Booked! You'll receive a confirmation shortly.</div>
+
+<script>
+const specialtyFilter = document.getElementById("specialtyFilter");
+const counsellorList = document.getElementById("counsellorList");
+const favoritesList = document.getElementById("favoritesList");
+const favoritesSection = document.getElementById("favoritesSection");
+const favCount = document.getElementById("favCount");
+const priceFilter = document.getElementById("priceFilter");
+const sortFilter = document.getElementById("sortFilter");
+const rangeVal = document.getElementById("rangeVal");
+const searchInput = document.getElementById("search");
+const modal = document.getElementById("counsellorModal");
+const closeModal = document.getElementById("closeModal");
+const confirmBtn = document.getElementById("confirmBookingBtn");
+const toast = document.getElementById("toast");
+
+const counsellorsData = [
+    { name: "Dr. Alica Parker", specialty: "Clinical Psychologist", price: 800, experience: "10+ Years", img: "https://randomuser.me/api/portraits/women/44.jpg", rating: 4.8, bio: "Specializes in CBT for anxiety & depression. Experienced in academic stress management and helping students cope with performance pressure.", available: true },
+    { name: "Mr. Jacob Porier", specialty: "Student Counsellor", price: 500, experience: "5+ Years", img: "https://randomuser.me/api/portraits/men/32.jpg", rating: 4.5, bio: "Expert in career guidance, motivation, and time management. Helps students discover their strengths and build confidence.", available: false },
+    { name: "Dr. Haley Biber ", specialty: "Mindfulness Coach", price: 650, experience: "7+ Years", img: "https://randomuser.me/api/portraits/women/68.jpg", rating: 4.9, bio: "Certified in mindfulness-based stress reduction & meditation techniques. Helps clients achieve inner peace and emotional balance.", available: true },
+    { name: "Dr. Alex Jane", specialty: "Relationship Counsellor", price: 900, experience: "12+ Years", img: "https://randomuser.me/api/portraits/men/52.jpg", rating: 4.7, bio: "Specializes in couples therapy, family dynamics, and communication skills. Helps build healthier relationships.", available: true },
+    { name: "Ms. Percy Cormier", specialty: "Career Coach", price: 750, experience: "8+ Years", img: "https://randomuser.me/api/portraits/women/32.jpg", rating: 4.6, bio: "Expert in career transitions, professional development, and work-life balance. Guides clients to achieve their career goals.", available: true },
+    { name: "Dr. Jon Jones", specialty: "Child Psychologist", price: 850, experience: "15+ Years", img: "https://randomuser.me/api/portraits/women/65.jpg", rating: 4.9, bio: "Specializes in child development, behavioral issues, and learning difficulties. Creates a safe space for young minds.", available: false },
+];
+
+let favorites = [];
+
+function renderRating(score) {
+    let stars = '';
+    for(let i = 0; i < 5; i++) {
+        if(i < Math.floor(score)) stars += '<i class="fas fa-star"></i>';
+        else if(i < score) stars += '<i class="fas fa-star-half-alt"></i>';
+        else stars += '<i class="far fa-star"></i>';
+    }
+    return `${stars} <span class="rating-value">(${score})</span>`;
+}
+
+function createCard(c, isFavorite = false) {
+    const statusClass = c.available ? 'available' : 'busy';
+    const statusText = c.available ? 'Available' : 'Busy';
+    const favClass = favorites.includes(c.name) ? 'active' : '';
+    
+    return `
+        <div class="card" data-name="${c.name}" data-specialty="${c.specialty}" data-price="${c.price}" data-experience="${c.experience}" data-img="${c.img}" data-bio="${c.bio}" data-rating="${c.rating}">
+            <span class="favorite ${favClass}" data-name="${c.name}">
+                <i class="fas fa-heart"></i>
+            </span>
+            <div class="profile-container">
+                <img src="${c.img}" alt="${c.name}">
+                <span class="status-badge ${statusClass}">${statusText}</span>
+            </div>
+            <h2>${c.name}</h2>
+            <p class="specialty">${c.specialty}</p>
+            <div class="rating">${renderRating(c.rating)}</div>
+            <p class="experience">${c.experience} Experience</p>
+            <p class="price">₹${c.price} / session</p>
+            <p class="bio">${c.bio}</p>
+            <button class="bookBtn">View & Book Session</button>
+        </div>
+    `;
+}
+
+function renderCounsellors(data) {
+    counsellorList.innerHTML = '';
+    
+    if(data.length === 0) {
+        counsellorList.innerHTML = '<p class="empty-message">No counsellors found matching your filters.</p>';
+        return;
+    }
+    
+    const specialties = new Set();
+    data.forEach(c => {
+        specialties.add(c.specialty);
+        counsellorList.insertAdjacentHTML('beforeend', createCard(c));
+    });
+
+    if(specialtyFilter.options.length === 1) {
+        specialties.forEach(spec => {
+            const option = document.createElement('option');
+            option.value = spec;
+            option.textContent = spec;
+            specialtyFilter.appendChild(option);
+        });
+    }
+
+    attachEventListeners();
+}
+
+function renderFavorites() {
+    const favData = counsellorsData.filter(c => favorites.includes(c.name));
+    favCount.textContent = favData.length;
+    
+    if(favData.length === 0) {
+        favoritesSection.style.display = 'none';
+        return;
+    }
+    
+    favoritesSection.style.display = 'block';
+    favoritesList.innerHTML = '';
+    favData.forEach(c => {
+        favoritesList.insertAdjacentHTML('beforeend', createCard(c, true));
+    });
+    
+    attachEventListeners();
+}
+
+function filterAndSort() {
+    const searchVal = searchInput.value.toLowerCase();
+    const specialtyVal = specialtyFilter.value;
+    const priceVal = parseInt(priceFilter.value);
+    rangeVal.textContent = priceVal;
+    
+    let filteredList = counsellorsData.filter(c => {
+        return (c.name.toLowerCase().includes(searchVal) || 
+                c.specialty.toLowerCase().includes(searchVal) || 
+                c.bio.toLowerCase().includes(searchVal))
+            && (!specialtyVal || c.specialty === specialtyVal) 
+            && c.price <= priceVal;
+    });
+    
+    const sortVal = sortFilter.value;
+    if(sortVal === 'rating') filteredList.sort((a, b) => b.rating - a.rating);
+    else if(sortVal === 'priceAsc') filteredList.sort((a, b) => a.price - b.price);
+    else if(sortVal === 'priceDesc') filteredList.sort((a, b) => b.price - a.price);
+    
+    renderCounsellors(filteredList);
+}
+
+function attachEventListeners() {
+    document.querySelectorAll(".bookBtn").forEach(btn => {
+        btn.onclick = e => {
+            e.stopPropagation();
+            const card = e.target.closest(".card");
+            document.getElementById("modalImg").src = card.dataset.img;
+            document.getElementById("modalName").textContent = card.dataset.name;
+            document.getElementById("modalSpecialty").textContent = card.dataset.specialty;
+            document.getElementById("modalRating").innerHTML = renderRating(parseFloat(card.dataset.rating));
+            document.getElementById("modalExperience").textContent = card.dataset.experience + " Experience";
+            document.getElementById("modalPrice").textContent = "₹" + card.dataset.price;
+            document.getElementById("modalBio").textContent = card.dataset.bio;
+            modal.style.display = "flex";
+        };
+    });
+    
+    document.querySelectorAll(".favorite").forEach(fav => {
+        fav.onclick = e => {
+            e.stopPropagation();
+            const name = fav.dataset.name;
+            if(favorites.includes(name)) {
+                favorites = favorites.filter(f => f !== name);
+            } else {
+                favorites.push(name);
+            }
+            fav.classList.toggle("active");
+            renderFavorites();
+        };
+    });
+}
+
+searchInput.addEventListener("input", filterAndSort);
+specialtyFilter.addEventListener("change", filterAndSort);
+priceFilter.addEventListener("input", filterAndSort);
+sortFilter.addEventListener("change", filterAndSort);
+
+closeModal.onclick = () => modal.style.display = "none";
+window.onclick = e => {
+    if(e.target === modal) modal.style.display = "none";
+};
+
+confirmBtn.onclick = () => {
+    toast.classList.add("show");
+    setTimeout(() => {
+        toast.classList.remove("show");
+        modal.style.display = "none";
+    }, 2500);
+};
+
+filterAndSort();
+</script>
+</body>
+</html>
