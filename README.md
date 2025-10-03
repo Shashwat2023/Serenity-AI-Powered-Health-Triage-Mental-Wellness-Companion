@@ -1,0 +1,2 @@
+# Serenity-AI-Powered-Health-Triage-Mental-Wellness-Companion
+Serenity is a full-stack AI health triage &amp; mental wellness app. It analyzes symptoms to suggest Home Care, Doctor Visit, or Emergency, and tracks user mood in real time. With guided exercises, counselor access, and Firestore-based history, it ensures private, local, context-aware support via Flask backend, Phi-3-mini LLM, and Tailwind frontend.
