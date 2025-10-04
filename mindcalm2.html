@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MindCalm Interest Analyzer</title>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap");
+
+      :root {
+        --primary-color: #91f291;
+        --secondary-color: #61f2c2;
+        --background-color: #f0fdf8;
+        --text-color: #2c3e50;
+        --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        font-family: "Poppins", sans-serif;
+      }
+
+      body {
+        background-color: var(--background-color);
+        color: var(--text-color);
+        margin: 0;
+        overflow-x: hidden;
+      }
+
+      /* --- Leaf Background Animation --- */
+      .leaves-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        pointer-events: none; /* Allows clicks to go through */
+      }
+      .leaf {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2391F291' opacity='0.7'%3E%3Cpath d='M17.6,1.4C15.8,0.5,13.7,0.7,11.9,1.7c-2.5,1.4-4,4.2-4,7.2c0,3.3,2.1,6.2,5.1,7.4c2.6,1,5.5,0.3,7.5-1.5 c-1.2,1.3-2.9,2.1-4.7,2.1c-3.3,0-6-2.7-6-6s2.7-6,6-6c1.4,0,2.7,0.5,3.7,1.3C19.7,5.6,19.3,3.1,17.6,1.4z'/%3E%3C/svg%3E");
+        background-size: contain;
+        animation: fall linear infinite;
+      }
+      @keyframes fall {
+        0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+      }
+
+      /* --- Main App Layout --- */
+      .App {
+        text-align: center;
+        padding: 2rem 1rem;
+        position: relative;
+        z-index: 2;
+      }
+      .header { margin-bottom: 2rem; }
+      .header h1 { font-size: 2.5rem; font-weight: 600; color: #34495e; margin: 0; }
+      .header p { font-size: 1.1rem; color: #7f8c8d; }
+
+      .mood-selector {
+        margin-bottom: 3rem;
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .mood-btn {
+        padding: 0.8rem 1.8rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-color);
+        background-color: #fff;
+        border: 2px solid var(--primary-color);
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: var(--card-shadow);
+      }
+      .mood-btn:hover {
+        background-color: var(--primary-color);
+        color: #fff;
+        transform: translateY(-3px);
+      }
+      .mood-btn.active {
+        background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+        color: #fff;
+        border-color: var(--secondary-color);
+      }
+
+      /* --- Recommendations Display --- */
+      .recommendations {
+        max-width: 900px;
+        margin: 0 auto;
+        animation: fadeIn 0.8s ease-in-out;
+      }
+      .rec-section { margin-bottom: 3rem; }
+      .rec-section h2 {
+        font-size: 1.8rem;
+        border-bottom: 2px solid var(--secondary-color);
+        display: inline-block;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+      }
+      .media-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: var(--card-shadow);
+        padding: 1.5rem;
+        text-align: left;
+        transition: transform 0.3s ease;
+      }
+      .media-card:hover { transform: translateY(-5px); }
+      .media-card h3 { margin-top: 0; font-size: 1.2rem; }
+      .media-card p { color: #7f8c8d; font-size: 0.95rem; }
+
+      .youtube-embed {
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+        width: 100%;
+        padding-top: 56.25%; /* 16:9 Aspect Ratio */
+        margin-top: 1rem;
+      }
+      .youtube-embed iframe {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;
+      }
+
+      .media-card a {
+        display: inline-block;
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        background-color: var(--primary-color);
+        color: var(--text-color);
+        text-decoration: none;
+        border-radius: 20px;
+        font-weight: 600;
+        transition: background-color 0.3s ease;
+      }
+      .media-card a:hover { background-color: var(--secondary-color); }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      // --- Expanded Recommendation Data ---
+      const recommendationsData = {
+        stressed: {
+          songs: [
+            { title: "Weightless", artist: "Marconi Union", youtubeId: "UfcAVejslrU" },
+            { title: "Clair de Lune", artist: "Claude Debussy", youtubeId: "CvFH_6DNRCY" },
+            { title: "Three Little Birds", artist: "Bob Marley", youtubeId: "LanCLS_hIo4" },
+          ],
+          movies: [
+            { title: "My Neighbor Totoro (1988)", description: "A gentle, heartwarming animated film about finding wonder in nature. Its lack of conflict and beautiful scenery are incredibly soothing." },
+            { title: "Chef (2014)", description: "A feel-good movie about rediscovering passion. It's a low-stress, positive, and delicious journey." },
+          ],
+          media: [
+            { title: "Guided Meditation for Stress", description: "Follow a 10-minute guided meditation on YouTube to center your thoughts and calm your nervous system.", link: "https://www.youtube.com/watch?v=inpok4MKVLM" },
+          ],
+        },
+        examPressure: {
+          songs: [
+            { title: "Lofi Hip Hop Radio", artist: "Lofi Girl", youtubeId: "jfKfPfyJRdk" },
+            { title: "Eye of the Tiger", artist: "Survivor", youtubeId: "btPJPFnesV4" },
+            { title: "Hall of Fame", artist: "The Script", youtubeId: "mk48xRzuNvA" },
+          ],
+          movies: [
+             { title: "Good Will Hunting (1997)", description: "An inspiring film about a young genius overcoming his past. Highly motivational for anyone in an academic setting." },
+          ],
+          media: [
+            { title: "Pomodoro Technique Timer", description: "Use this 25-minute timer with built-in breaks to structure your study sessions effectively and avoid burnout.", link: "https://www.youtube.com/watch?v=4xGiSmaS_a0" },
+            { title: "How to Get Your Brain to Focus", description: "An insightful talk by Chris Bailey on practical ways to improve focus and attention during intense study periods.", link: "https://www.youtube.com/watch?v=Hu4Yvq-g7_Y" }
+          ],
+        },
+        breakup: {
+          songs: [
+            { title: "I Will Survive", artist: "Gloria Gaynor", youtubeId: "gYkACVDFmeg" },
+            { title: "Good as Hell", artist: "Lizzo", youtubeId: "SmbmeOgWsqE" },
+            { title: "Someone Like You", artist: "Adele", youtubeId: "hLQl3WQQoQ0" },
+          ],
+          movies: [
+            { title: "Legally Blonde (2001)", description: "A fun and empowering movie about a woman who discovers her own strength and intelligence after a tough breakup." },
+            { title: "Eat Pray Love (2010)", description: "Follow a journey of self-discovery across the world. Perfect for reminding you of life's possibilities." },
+          ],
+           media: [
+            { title: "Journaling Prompts", description: "Writing can be a powerful healing tool. Use these prompts to process your emotions and gain clarity.", link: "https://www.verywellmind.com/journaling-prompts-for-breakups-7560592" }
+          ],
+        },
+        grief: {
+           songs: [
+            { title: "Tears in Heaven", artist: "Eric Clapton", youtubeId: "JxPj3GAYYZ0" },
+            { title: "See You Again", artist: "Wiz Khalifa ft. Charlie Puth", youtubeId: "RgKAFK5djSk" },
+            { title: "Fix You", artist: "Coldplay", youtubeId: "k4V3Mo61fJM" }
+          ],
+          movies: [
+            { title: "Coco (2017)", description: "A beautiful and vibrant animated film that explores themes of family, memory, and loss in a gentle and life-affirming way." },
+            { title: "Up (2009)", description: "While the opening is famously heartbreaking, the rest of the film is a heartwarming story about finding new purpose and adventure after loss." },
+          ],
+          media: [
+            { title: "Comforting Ambient Sounds", description: "Listen to gentle rain sounds or a crackling fireplace to create a soothing, safe-feeling environment.", link: "https://www.youtube.com/watch?v=nDq6TcfD2Ok" }
+          ],
+        },
+        underconfident: {
+          songs: [
+            { title: "Confident", artist: "Demi Lovato", youtubeId: "cwZAj_h4g6M" },
+            { title: "The Greatest", artist: "Sia", youtubeId: "GKSRyLdjsPA" },
+            { title: "Unwritten", artist: "Natasha Bedingfield", youtubeId: "b7k0a5hYnSI" },
+          ],
+          movies: [
+            { title: "Hidden Figures (2016)", description: "The incredible true story of brilliant women who were the brains behind one of NASA's greatest operations. A huge confidence booster." },
+            { title: "The Pursuit of Happyness (2006)", description: "An inspiring story of perseverance against all odds, reminding you that your circumstances don't define your potential." },
+          ],
+          media: [
+            { title: "Your Body Language May Shape Who You Are", description: "A famous TED Talk by Amy Cuddy on how 'power posing' can boost feelings of confidence.", link: "https://www.youtube.com/watch?v=Ks-_Mh1QhMc" }
+          ],
+        },
+      };
+
+      // --- Helper function to format mood names for buttons ---
+      const formatMoodName = (key) => {
+        const result = key.replace(/([A-Z])/g, " $1");
+        return result.charAt(0).toUpperCase() + result.slice(1);
+      };
+
+      // --- Leaf Component for Background Animation ---
+      const Leaf = ({ style, animationDuration, animationDelay }) => {
+        const leafStyle = { ...style, animationDuration, animationDelay };
+        return <div className="leaf" style={leafStyle}></div>;
+      };
+
+      // --- Main App Component ---
+      function App() {
+        const [mood, setMood] = React.useState(null);
+        const [leaves, setLeaves] = React.useState([]);
+
+        React.useEffect(() => {
+          const newLeaves = Array.from({ length: 20 }, () => ({
+            style: { left: `${Math.random() * 100}vw`, transform: `scale(${Math.random() * 0.5 + 0.5})` },
+            animationDuration: `${Math.random() * 10 + 15}s`, // Slower fall
+            animationDelay: `${Math.random() * 20}s`,
+          }));
+          setLeaves(newLeaves);
+        }, []);
+        
+        React.useEffect(() => {
+            const handleScroll = () => {
+                const scrollY = window.scrollY;
+                const leavesContainer = document.querySelector('.leaves-container');
+                if (leavesContainer) {
+                    leavesContainer.style.transform = `translateY(${scrollY * 0.2}px)`;
+                }
+            };
+            window.addEventListener('scroll', handleScroll);
+            return () => window.removeEventListener('scroll', handleScroll);
+        }, []);
+
+        const currentRecommendations = mood ? recommendationsData[mood] : null;
+
+        return (
+          <React.Fragment>
+            <div className="leaves-container">
+              {leaves.map((leaf, index) => <Leaf key={index} {...leaf} />)}
+            </div>
+            <div className="App">
+              <header className="header">
+                <h1>MindCalm Analyzer 🌿</h1>
+                <p>Select how you're feeling to get personalized recommendations to soothe your mind.</p>
+              </header>
+
+              <div className="mood-selector">
+                {Object.keys(recommendationsData).map((moodKey) => (
+                  <button
+                    key={moodKey}
+                    className={`mood-btn ${mood === moodKey ? "active" : ""}`}
+                    onClick={() => setMood(moodKey)}
+                  >
+                    {formatMoodName(moodKey)}
+                  </button>
+                ))}
+              </div>
+
+              {currentRecommendations && (
+                <div className="recommendations">
+                  {currentRecommendations.songs && (
+                    <div className="rec-section">
+                      <h2>Soothing & Uplifting Songs</h2>
+                      <div className="card-grid">
+                        {currentRecommendations.songs.map((song) => (
+                          <div key={song.title} className="media-card">
+                            <h3>{song.title}</h3>
+                            <p>by {song.artist}</p>
+                            <div className="youtube-embed">
+                              <iframe src={`https://www.youtube.com/embed/${song.youtubeId}`} title={song.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {currentRecommendations.movies && (
+                     <div className="rec-section">
+                      <h2>Comforting Movies</h2>
+                      <div className="card-grid">
+                        {currentRecommendations.movies.map((movie) => (
+                          <div key={movie.title} className="media-card">
+                            <h3>{movie.title}</h3>
+                            <p>{movie.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {currentRecommendations.media && (
+                    <div className="rec-section">
+                      <h2>Helpful Media & Activities</h2>
+                      <div className="card-grid">
+                        {currentRecommendations.media.map((item) => (
+                          <div key={item.title} className="media-card">
+                            <h3>{item.title}</h3>
+                            <p>{item.description}</p>
+                            <a href={item.link} target="_blank" rel="noopener noreferrer">
+                              Check it out
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </React.Fragment>
+        );
+      }
+
+      // --- Render the App to the DOM ---
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
