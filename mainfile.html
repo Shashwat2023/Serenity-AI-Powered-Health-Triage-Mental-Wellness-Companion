@@ -270,188 +270,6 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    // --- Chatbot Component with All Features ---
-    function Chatbot() {
-        const [messages, setMessages] = useState([
-            { text: "Hello! I'm Serenity, your support chatbot. How are you feeling today?", sender: 'bot', type: 'message' }
-        ]);
-        const [userInput, setUserInput] = useState('');
-        const [inExercise, setInExercise] = useState(false);
-        const [exerciseStep, setExerciseStep] = useState(0);
-        const [inPanicMode, setInPanicMode] = useState(false);
-        const [panicStep, setPanicStep] = useState(0);
-        const chatWindowRef = useRef(null);
-
-        // --- Exercise Content ---
-        const GROUNDING_EXERCISE = [
-            {"step": "Start", "text": "Let's begin. Take a slow, deep breath. In through your nose... and out through your mouth."},
-            {"step": "5 Senses: Sight", "text": "Look around you. Name 5 things you can see."},
-            {"step": "5 Senses: Touch", "text": "Now, focus on touch. Name 4 things you can feel."},
-            {"step": "5 Senses: Hearing", "text": "Listen closely. Name 3 things you can hear."},
-            {"step": "5 Senses: Smell", "text": "Take a moment to notice scents. Name 2 things you can smell."},
-            {"step": "5 Senses: Taste", "text": "Finally, focus on taste. Name 1 thing you can taste."},
-            {"step": "Finish", "text": "Great job. You've completed the exercise. Take one more deep breath."}
-        ];
-        const PANIC_EXERCISE = [
-            {"step": "Step 1: Prepare", "text": "We'll do a simple breathing exercise. Find a comfortable position and try to relax your shoulders.", "duration": 4},
-            {"step": "Step 2: Breathe In", "text": "Slowly breathe in through your nose...", "duration": 4},
-            {"step": "Step 3: Hold", "text": "Now, gently hold your breath...", "duration": 4},
-            {"step": "Step 4: Breathe Out", "text": "Slowly breathe out through your mouth...", "duration": 4},
-            {"step": "Step 5: Hold", "text": "Gently hold again...", "duration": 4},
-            {"step": "Repeat", "text": "You're doing great. Let's continue. In... hold... out... hold...", "duration": 8},
-            {"step": "Finish", "text": "You are in control. The exercise is complete. You can return to the chat when you're ready.", "duration": 0}
-        ];
-
-        // --- Automated Panic Mode Logic ---
-        useEffect(() => {
-            if (inPanicMode && panicStep < PANIC_EXERCISE.length - 1) {
-                const stepData = PANIC_EXERCISE[panicStep];
-                const timer = setTimeout(() => {
-                    setPanicStep(prev => prev + 1);
-                }, stepData.duration * 1000);
-                return () => clearTimeout(timer);
-            }
-        }, [inPanicMode, panicStep]);
-
-        useEffect(() => {
-            if (chatWindowRef.current) {
-                chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
-            }
-        }, [messages, inExercise, inPanicMode]);
-
-        // --- API and Session Management ---
-        const API_URL = 'http://localhost:5000/chat';
-        let sessionId = localStorage.getItem('serenity_session_id');
-        if (!sessionId) {
-            sessionId = crypto.randomUUID();
-            localStorage.setItem('serenity_session_id', sessionId);
-        }
-
-        const addMessage = (text, sender, type = 'message') => {
-            setMessages(prev => [...prev, { text, sender, type }]);
-        };
-
-        const handleSendMessage = async () => {
-            const prompt = userInput.trim();
-            if (prompt === '') return;
-
-            addMessage(prompt, 'user');
-            setUserInput('');
-            addMessage('Thinking...', 'bot'); // Show a thinking indicator
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, session_id: sessionId })
-                });
-
-                if (!response.ok) throw new Error('Network response was not ok.');
-                
-                const data = await response.json();
-                
-                // Replace "Thinking..." with the actual response
-                setMessages(prev => prev.slice(0, -1));
-                addMessage(data.response, 'bot');
-                handleMoodSuggestions(data.mood);
-
-            } catch (error) {
-                console.error('Error:', error);
-                setMessages(prev => prev.slice(0, -1));
-                addMessage('Sorry, I seem to be having trouble connecting. Please try again.', 'bot');
-            }
-        };
-        
-        const handleMoodSuggestions = (mood) => {
-            if (mood === 'sad' || mood === 'anxious') {
-                addMessage('', 'bot', 'exercise_prompt');
-            } else if (mood === 'seeking_community') {
-                addMessage('<b>You\'re Not Alone:</b> Connecting with others can be a great source of comfort. Consider joining a support community.', 'bot', 'success');
-            } else if (mood === 'serious_distress') {
-                addMessage('<b>Important Note:</b> It sounds like you are in a lot of pain. Remember, the Panic Mode button is available. Please also consider reaching out to a professional for dedicated support.', 'bot', 'warning');
-            }
-        };
-
-        const renderChatContent = () => {
-            if (inPanicMode) {
-                const stepData = PANIC_EXERCISE[panicStep];
-                return (
-                    <div className="flex-1 p-6 flex flex-col items-center justify-center text-center">
-                        <h3 className="font-bold text-xl mb-2 text-teal-700">{`Calm Down: ${stepData.step}`}</h3>
-                        <p className="text-3xl font-light">{stepData.text}</p>
-                        {panicStep === PANIC_EXERCISE.length - 1 && (
-                            <button onClick={() => {setInPanicMode(false); setPanicStep(0);}} className="mt-8 px-6 py-2 rounded-full bg-gradient-to-r from-green-400 to-teal-400 text-white font-semibold">
-                                Finish
-                            </button>
-                        )}
-                    </div>
-                );
-            }
-            if (inExercise) {
-                const stepData = GROUNDING_EXERCISE[exerciseStep];
-                return (
-                     <div className="flex-1 p-6 flex flex-col items-center justify-center text-center">
-                        <h3 className="font-bold text-xl mb-2 text-teal-700">{`Grounding Exercise: ${stepData.step}`}</h3>
-                        <p className="text-2xl font-light mb-8">{stepData.text}</p>
-                        {exerciseStep < GROUNDING_EXERCISE.length - 1 ? (
-                            <button onClick={() => setExerciseStep(prev => prev + 1)} className="px-6 py-2 rounded-full bg-gradient-to-r from-green-400 to-teal-400 text-white font-semibold">
-                                Next Step
-                            </button>
-                        ) : (
-                            <button onClick={() => {setInExercise(false); setExerciseStep(0);}} className="px-6 py-2 rounded-full bg-gradient-to-r from-green-400 to-teal-400 text-white font-semibold">
-                                Finish Exercise
-                            </button>
-                        )}
-                    </div>
-                );
-            }
-            return (
-                <div ref={chatWindowRef} className="flex-1 p-4 overflow-y-auto">
-                    <div className="flex flex-col">
-                        {messages.map((msg, index) => {
-                            if (msg.type === 'message') {
-                                return <div key={index} className={`my-2 p-3 rounded-2xl max-w-[80%] leading-relaxed ${msg.sender === 'user' ? 'bg-teal-500 text-white self-end rounded-br-none' : 'bg-gray-200 text-gray-800 self-start rounded-bl-none'}`}>{msg.text}</div>;
-                            }
-                            if (msg.type === 'exercise_prompt') {
-                                return (
-                                    <div key={index} className="my-2 p-4 rounded-lg border border-blue-300 bg-blue-50 w-full">
-                                        <p className="mb-3">It sounds like you're going through a tough moment. Sometimes a grounding exercise can help bring a sense of calm.</p>
-                                        <button onClick={() => setInExercise(true)} className="px-4 py-2 rounded-full bg-blue-500 text-white font-semibold">Start 5-4-3-2-1 Grounding Exercise</button>
-                                    </div>
-                                );
-                            }
-                            const classes = { success: 'border-green-300 bg-green-50', warning: 'border-yellow-300 bg-yellow-50' };
-                            return <div key={index} className={`my-2 p-3 rounded-lg border w-full ${classes[msg.type]}`} dangerouslySetInnerHTML={{ __html: msg.text }} />;
-                        })}
-                    </div>
-                </div>
-            );
-        };
-
-        return (
-            <div className="h-[70vh] max-h-[600px] w-full glass-card flex flex-col z-20 slide-up" style={{ animationDelay: '0.4s' }}>
-                <div className="flex items-center justify-between p-4 bg-white/50 text-gray-800 rounded-t-2xl border-b border-white/50">
-                    <h3 className="font-bold text-lg">Talk to Serenity</h3>
-                    <button onClick={() => { setInPanicMode(true); setPanicStep(0); }} className="px-3 py-1 rounded-full text-sm font-semibold border-2 border-red-400 text-red-500 hover:bg-red-50 transition">🚨 Panic Mode</button>
-                </div>
-                {renderChatContent()}
-                {!inExercise && !inPanicMode && (
-                    <div className="p-4 border-t border-gray-200/50 flex items-center">
-                        <input
-                            type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                            placeholder="How are you feeling?"
-                            className="flex-1 p-3 rounded-full border-2 border-gray-200/80 bg-transparent focus:outline-none focus:border-teal-400 transition"
-                        />
-                        <button onClick={handleSendMessage} className="ml-3 p-3 rounded-full bg-gradient-to-r from-green-400 to-teal-400 text-white hover:scale-110 transition shadow-lg">
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
-                        </button>
-                    </div>
-                )}
-            </div>
-        );
-    }
-    
     function App() {
       const [calmMode, setCalmMode] = useState(false);
       const [scrollProgress, setScrollProgress] = useState(0);
@@ -462,6 +280,10 @@
       const [showProfile, setShowProfile] = useState(false);
       const [activeSection, setActiveSection] = useState('home');
       const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+      
+      const [inPanicMode, setInPanicMode] = useState(false);
+      const [panicStep, setPanicStep] = useState(0);
+      
       const [userData, setUserData] = useState({
         name: 'Alex Johnson',
         email: 'alex@student.edu',
@@ -484,7 +306,26 @@
         "Take it one day at a time.",
         "You are enough, just as you are."
       ];
+      
+      const PANIC_EXERCISE = [
+          {"step": "Step 1: Prepare", "text": "We'll do a simple breathing exercise. Find a comfortable position and try to relax your shoulders.", "duration": 4},
+          {"step": "Step 2: Breathe In", "text": "Slowly breathe in through your nose...", "duration": 4},
+          {"step": "Step 3: Hold", "text": "Now, gently hold your breath...", "duration": 4},
+          {"step": "Step 4: Breathe Out", "text": "Slowly breathe out through your mouth...", "duration": 4},
+          {"step": "Step 5: Hold", "text": "Gently hold again...", "duration": 4},
+          {"step": "Repeat", "text": "You're doing great. Let's continue. In... hold... out... hold...", "duration": 8},
+          {"step": "Finish", "text": "You are in control. The exercise is complete. You can return when you're ready.", "duration": 0}
+      ];
 
+      useEffect(() => {
+          if (inPanicMode && panicStep < PANIC_EXERCISE.length - 1) {
+              const stepData = PANIC_EXERCISE[panicStep];
+              const timer = setTimeout(() => {
+                  setPanicStep(prev => prev + 1);
+              }, stepData.duration * 1000);
+              return () => clearTimeout(timer);
+          }
+      }, [inPanicMode, panicStep]);
 
       useEffect(() => {
         const timer = setInterval(() => {
@@ -560,484 +401,516 @@
         }));
         triggerConfetti();
       };
+      
+      const renderPanicUI = () => {
+          const stepData = PANIC_EXERCISE[panicStep];
+          return (
+              <div className="fixed inset-0 bg-green-50 z-[1000] flex flex-col items-center justify-center text-center p-6">
+                  <h3 className="font-bold text-2xl mb-4 text-teal-700">{`Calm Down: ${stepData.step}`}</h3>
+                  <p className="text-4xl font-light mb-8">{stepData.text}</p>
+                  {panicStep < PANIC_EXERCISE.length - 1 && stepData.duration > 0 && 
+                      <p className="text-lg text-gray-500 animate-pulse">Next step in {stepData.duration} seconds...</p>
+                  }
+                  {panicStep === PANIC_EXERCISE.length - 1 && (
+                      <button onClick={() => {setInPanicMode(false); setPanicStep(0);}} className="mt-8 px-8 py-3 rounded-full bg-gradient-to-r from-green-400 to-teal-400 text-white font-semibold text-lg hover:scale-105 transition">
+                          Finish & Return
+                      </button>
+                  )}
+              </div>
+          );
+      };
 
       return (
         <>
-          {/* Progress Bar */}
-          <div className="progress-bar" style={{ width: `${scrollProgress}%` }} />
-
-          {/* Dim Overlay for Calm Mode */}
-          <div className={`dim-overlay ${calmMode ? 'active' : ''}`} />
-
-          {/* Falling Leaves */}
-          {!calmMode && Array.from({ length: 20 }).map((_, i) => (
-            <div
-              key={`leaf-${i}`}
-              className="leaf"
-              style={{
-                left: `${(i * 5) % 100}%`,
-                animationDelay: `${i * 0.6}s`,
-                width: `${16 + (i % 3) * 4}px`,
-                height: `${16 + (i % 3) * 4}px`,
-              }}
-            />
-          ))}
-
-          {/* Calm Mode Effects */}
-          {calmMode && (
+        {inPanicMode ? renderPanicUI() : (
             <>
-              <div className="wave-container">
-                <div className="wave" style={{ top: '20%', left: '10%', animationDuration: '25s' }} />
-                <div className="wave" style={{ top: '60%', left: '50%', animationDuration: '30s', animationDirection: 'reverse' }} />
-              </div>
-              {Array.from({ length: 25 }).map((_, i) => (
+              {/* Progress Bar */}
+              <div className="progress-bar" style={{ width: `${scrollProgress}%` }} />
+
+              {/* Dim Overlay for Calm Mode */}
+              <div className={`dim-overlay ${calmMode ? 'active' : ''}`} />
+
+              {/* Falling Leaves */}
+              {!calmMode && Array.from({ length: 20 }).map((_, i) => (
                 <div
-                  key={`bubble-${i}`}
-                  className="bubble"
+                  key={`leaf-${i}`}
+                  className="leaf"
                   style={{
-                    left: `${Math.random() * 100}%`,
-                    width: `${30 + Math.random() * 100}px`,
-                    height: `${30 + Math.random() * 100}px`,
-                    animationDuration: `${12 + Math.random() * 12}s`,
-                    animationDelay: `${Math.random() * 8}s`,
+                    left: `${(i * 5) % 100}%`,
+                    animationDelay: `${i * 0.6}s`,
+                    width: `${16 + (i % 3) * 4}px`,
+                    height: `${16 + (i % 3) * 4}px`,
                   }}
                 />
               ))}
-            </>
-          )}
 
-          {/* Navigation */}
-          <nav className="sticky top-0 z-50 nav-glass">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-              <div className="flex items-center justify-between">
-                {/* Logo */}
-                <div className="flex items-center gap-3 cursor-pointer" onClick={() => scrollToSection('home')}>
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-400 to-teal-400 flex items-center justify-center text-white font-bold shadow-lg transform hover:scale-110 transition">
-                    S
+              {/* Calm Mode Effects */}
+              {calmMode && (
+                <>
+                  <div className="wave-container">
+                    <div className="wave" style={{ top: '20%', left: '10%', animationDuration: '25s' }} />
+                    <div className="wave" style={{ top: '60%', left: '50%', animationDuration: '30s', animationDirection: 'reverse' }} />
                   </div>
-                  <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-                    Serenity
-                  </span>
-                </div>
-
-                {/* Desktop Navigation */}
-                <div className="hidden md:flex items-center gap-8">
-                  {['home', 'features', 'about'].map(section => (
-                    <button
-                      key={section}
-                      onClick={() => scrollToSection(section)}
-                      className={`nav-link text-sm font-medium capitalize ${
-                        activeSection === section ? 'text-teal-600' : 'text-gray-700'
-                      }`}
-                    >
-                      {section}
-                    </button>
+                  {Array.from({ length: 25 }).map((_, i) => (
+                    <div
+                      key={`bubble-${i}`}
+                      className="bubble"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        width: `${30 + Math.random() * 100}px`,
+                        height: `${30 + Math.random() * 100}px`,
+                        animationDuration: `${12 + Math.random() * 12}s`,
+                        animationDelay: `${Math.random() * 8}s`,
+                      }}
+                    />
                   ))}
-                  <button
-                    onClick={() => setCalmMode(!calmMode)}
-                    className={`px-4 py-2 rounded-full glass-card text-sm font-medium hover:scale-105 transition ${
-                      calmMode ? 'bg-gradient-to-r from-green-400 to-teal-400 text-white' : ''
-                    }`}
-                  >
-                    {calmMode ? '🌊 Calm Mode On' : '🌊 Calm Mode'}
-                  </button>
-                </div>
+                </>
+              )}
 
-                {/* Profile Section */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowProfile(!showProfile)}
-                    className="w-12 h-12 rounded-full bg-gradient-to-r from-green-400 to-teal-400 flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transition"
-                  >
-                    {userData.name.charAt(0)}
-                  </button>
-                  
-                  <div className={`profile-dropdown ${showProfile ? 'active' : ''}`}>
-                    <div className="glass-card p-6 space-y-4">
-                      <div className="flex items-center gap-4 pb-4 border-b border-gray-200 dark:border-gray-600">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-r from-green-400 to-teal-400 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                          {userData.name.charAt(0)}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-lg">{userData.name}</h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{userData.email}</p>
-                        </div>
+              {/* Navigation */}
+              <nav className="sticky top-0 z-50 nav-glass">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    {/* Logo */}
+                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => scrollToSection('home')}>
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-400 to-teal-400 flex items-center justify-center text-white font-bold shadow-lg transform hover:scale-110 transition">
+                        S
                       </div>
-                      
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Member Since</span>
-                          <span className="font-medium">{userData.joinDate}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Sessions Completed</span>
-                          <span className="font-medium">{userData.sessionsCompleted}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Days Active</span>
-                          <span className="font-medium">{userData.daysActive}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Mood Entries</span>
-                          <span className="font-medium">{userData.moodEntries}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Overall Progress</span>
-                          <span className="text-sm font-bold text-teal-600">{userData.progress}%</span>
-                        </div>
-                        <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-green-400 to-teal-400 transition-all duration-500"
-                            style={{ width: `${userData.progress}%` }}
-                          />
-                        </div>
-                      </div>
-                      
-                      <button className="w-full py-2 mt-2 rounded-full bg-gradient-to-r from-green-400 to-teal-400 text-white font-medium hover:scale-105 transition">
-                        View Full Profile
+                      <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                        Serenity
+                      </span>
+                    </div>
+
+                    {/* Desktop Navigation */}
+                    <div className="hidden md:flex items-center gap-8">
+                      {['home', 'features', 'about'].map(section => (
+                        <button
+                          key={section}
+                          onClick={() => scrollToSection(section)}
+                          className={`nav-link text-sm font-medium capitalize ${
+                            activeSection === section ? 'text-teal-600' : 'text-gray-700'
+                          }`}
+                        >
+                          {section}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setCalmMode(!calmMode)}
+                        className={`px-4 py-2 rounded-full glass-card text-sm font-medium hover:scale-105 transition ${
+                          calmMode ? 'bg-gradient-to-r from-green-400 to-teal-400 text-white' : ''
+                        }`}
+                      >
+                        {calmMode ? '🌊 Calm Mode On' : '🌊 Calm Mode'}
                       </button>
+                       <button onClick={() => { setInPanicMode(true); setPanicStep(0); }} className="px-4 py-2 rounded-full text-sm font-semibold border-2 border-red-400 text-red-500 hover:bg-red-50 transition">🚨 Panic Mode</button>
+                    </div>
+
+                    {/* Profile Section */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowProfile(!showProfile)}
+                        className="w-12 h-12 rounded-full bg-gradient-to-r from-green-400 to-teal-400 flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transition"
+                      >
+                        {userData.name.charAt(0)}
+                      </button>
+                      
+                      <div className={`profile-dropdown ${showProfile ? 'active' : ''}`}>
+                        <div className="glass-card p-6 space-y-4">
+                          <div className="flex items-center gap-4 pb-4 border-b border-gray-200 dark:border-gray-600">
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-green-400 to-teal-400 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                              {userData.name.charAt(0)}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-lg">{userData.name}</h3>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">{userData.email}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Member Since</span>
+                              <span className="font-medium">{userData.joinDate}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Sessions Completed</span>
+                              <span className="font-medium">{userData.sessionsCompleted}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Days Active</span>
+                              <span className="font-medium">{userData.daysActive}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">Mood Entries</span>
+                              <span className="font-medium">{userData.moodEntries}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium">Overall Progress</span>
+                              <span className="text-sm font-bold text-teal-600">{userData.progress}%</span>
+                            </div>
+                            <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-green-400 to-teal-400 transition-all duration-500"
+                                style={{ width: `${userData.progress}%` }}
+                              />
+                            </div>
+                          </div>
+                          
+                          <button className="w-full py-2 mt-2 rounded-full bg-gradient-to-r from-green-400 to-teal-400 text-white font-medium hover:scale-105 transition">
+                            View Full Profile
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mobile Menu Button */}
+                    <button
+                      className="md:hidden text-2xl"
+                      onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    >
+                      {mobileMenuOpen ? '✕' : '☰'}
+                    </button>
+                  </div>
+
+                  {/* Mobile Menu */}
+                  {mobileMenuOpen && (
+                    <div className="md:hidden mt-4 space-y-3 pb-4">
+                      {['home', 'features', 'about'].map(section => (
+                        <button
+                          key={section}
+                          onClick={() => scrollToSection(section)}
+                          className="block w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 capitalize"
+                        >
+                          {section}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => { setCalmMode(!calmMode); setMobileMenuOpen(false); }}
+                        className="block w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100"
+                      >
+                        {calmMode ? '🌊 Calm Mode On' : '🌊 Calm Mode'}
+                      </button>
+                      <button onClick={() => { setInPanicMode(true); setPanicStep(0); setMobileMenuOpen(false); }} className="block w-full text-left px-4 py-2 rounded-lg hover:bg-red-50 text-red-500 font-semibold">🚨 Panic Mode</button>
+                    </div>
+                  )}
+                </div>
+              </nav>
+
+              {/* Hero Section */}
+              <section id="home" className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-20 relative z-10">
+                <div className="max-w-5xl w-full text-center space-y-8 fade-in">
+                  <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold bg-gradient-to-r from-green-600 via-teal-600 to-blue-600 bg-clip-text text-transparent leading-tight">
+                    Your Journey to Inner Peace Starts Here
+                  </h1>
+                  
+                  <p className="text-lg sm:text-xl md:text-2xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto">
+                    Safe, professional, and compassionate mental health support designed specifically for students navigating life's challenges
+                  </p>
+
+                  {/* Daily Affirmation */}
+                  <div className="glass-card p-6 sm:p-8 max-w-2xl mx-auto slide-up" style={{ animationDelay: '0.2s' }}>
+                    <p className="text-xs sm:text-sm uppercase tracking-wider text-teal-600 dark:text-teal-400 mb-2">
+                      ✨ Daily Affirmation
+                    </p>
+                    <p className="text-xl sm:text-2xl font-medium italic">"{affirmations[affirmationIndex]}"</p>
+                  </div>
+
+                </div>
+              </section>
+
+              {/* Features Section */}
+              <section id="features" className="py-16 sm:py-20 px-4 sm:px-6 relative z-10">
+                <div className="max-w-7xl mx-auto">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-4 bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                    What We Offer
+                  </h2>
+                  <p className="text-center text-gray-600 dark:text-gray-400 mb-12 sm:mb-16 max-w-2xl mx-auto">
+                    Comprehensive mental health tools and support designed to help you thrive
+                  </p>
+                  
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+                    {[
+                      {
+                        title: 'AI Chatbot',
+                        desc: 'Our advanced AI understands your emotions and responds with genuine empathy and personalized support 24/7.',
+                        details: 'Powered by emotion detection algorithms, contextual understanding, and compassionate response generation.',
+                        icon: (
+                          <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                          </svg>
+                        )
+                      },
+                      {
+                        title: 'Mind Analyzer',
+                        desc: 'Our advanced Mind Analyzer understands your emotions and responds with genuine empathy and personalized support 24/7.',
+                        details: 'Powered by emotion detection algorithms, contextual understanding, and compassionate response generation.',
+                        icon: (
+                          <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                          </svg>
+                        )
+                      },
+                      {
+                        title: 'Guided Exercises',
+                        desc: 'Evidence-based breathing techniques, journaling prompts, and mindfulness practices tailored to your needs.',
+                        details: 'Includes 4-7-8 breathing, body scan meditation, gratitude journaling, and progressive muscle relaxation.',
+                        icon: (
+                          <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )
+                      },
+                      {
+                        title: 'Live Counselor',
+                        desc: 'Connect instantly with certified mental health professionals for real-time support when you need it most.',
+                        details: 'Licensed therapists and counselors available for video calls, voice calls, or text chat sessions.',
+                        icon: (
+                          <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                        )
+                      },
+                      {
+                        title: 'Community Support',
+                        desc: 'Join safe, anonymous peer groups where you can share experiences and connect with others who understand.',
+                        details: 'Moderated discussion groups for anxiety, stress, depression, academic pressure, and general wellness.',
+                        icon: (
+                          <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                        )
+                      }
+                    ].map((feature, i) => (
+                      <div
+                        key={feature.title}
+                        className="neumorphic p-6 sm:p-8 cursor-pointer slide-up group"
+                        style={{ animationDelay: `${i * 0.1}s` }}
+                        onClick={() => {
+                          openModal(feature);
+                          completeTask('feature_explore');
+                        }}
+                      >
+                        <div className="text-teal-600 dark:text-teal-400 mb-4 transform group-hover:scale-110 transition">
+                          {feature.icon}
+                        </div>
+                        <h3 className="text-xl font-semibold mb-3 group-hover:text-teal-600 transition">
+                          {feature.title}
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                          {feature.desc}
+                        </p>
+                        <button className="mt-4 text-sm font-medium text-teal-600 hover:text-teal-700 flex items-center gap-1">
+                          Learn More 
+                          <span className="transform group-hover:translate-x-1 transition">→</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Additional Features */}
+                  <div className="mt-16 grid md:grid-cols-3 gap-8">
+                    {[
+                      { icon: '📊', title: 'Progress Tracking', desc: 'Visual insights into your mental health journey with detailed analytics and trends.' },
+                      { icon: '🎯', title: 'Goal Setting', desc: 'Set and achieve personal wellness goals with our smart reminder system.' },
+                      { icon: '🔒', title: 'Complete Privacy', desc: 'End-to-end encryption ensures your conversations remain completely confidential.' }
+                    ].map((item, i) => (
+                      <div key={item.title} className="glass-card p-6 text-center slide-up" style={{ animationDelay: `${i * 0.15}s` }}>
+                        <div className="text-4xl mb-3">{item.icon}</div>
+                        <h4 className="font-semibold text-lg mb-2">{item.title}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{item.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* About Section */}
+              <section id="about" className="py-16 sm:py-20 px-4 sm:px-6 relative z-10">
+                <div className="max-w-5xl mx-auto">
+                  <div className="glass-card p-8 sm:p-12 slide-up">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                      Why Serenity?
+                    </h2>
+                    
+                    <div className="space-y-6 text-base sm:text-lg text-gray-700 dark:text-gray-300">
+                      <p className="leading-relaxed">
+                        Founded in 2025, <strong>Serenity</strong> emerged from a deep understanding of the mental health crisis facing students worldwide. Our founders, a team of mental health professionals and technologists, recognized that traditional support systems weren't meeting the needs of the digital generation.
+                      </p>
+                      
+                      <div className="bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 p-6 rounded-2xl my-8">
+                        <p className="font-semibold text-2xl text-center py-4 italic text-teal-700 dark:text-teal-300">
+                          "Healing starts with a conversation."
+                        </p>
+                      </div>
+                      
+                      <p className="leading-relaxed">
+                        We combine <strong>cutting-edge AI technology</strong> with <strong>evidence-based therapeutic practices</strong> to create a platform that's accessible, stigma-free, and truly understanding. Whether you're dealing with academic stress, social anxiety, depression, or just need someone to listen, we're here 24/7.
+                      </p>
+                      
+                      <div className="grid sm:grid-cols-2 gap-6 my-8">
+                        <div className="bg-white dark:bg-gray-800/50 p-6 rounded-2xl shadow-lg">
+                          <h4 className="font-semibold text-xl mb-3 text-teal-600">Our Mission</h4>
+                          <p className="text-sm">To democratize mental health support by providing accessible, affordable, and effective care to every student who needs it.</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800/50 p-6 rounded-2xl shadow-lg">
+                          <h4 className="font-semibold text-xl mb-3 text-teal-600">Our Vision</h4>
+                          <p className="text-sm">A world where every student has the tools and support to maintain excellent mental health throughout their academic journey and beyond.</p>
+                        </div>
+                      </div>
+                      
+                      <p className="leading-relaxed">
+                        Our platform has already helped <strong>over 100,000 students</strong> across 50 countries manage their mental health effectively. We've facilitated more than 2 million therapy sessions and maintained a 95% satisfaction rate among our users.
+                      </p>
+                      
+                      <div className="bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 p-6 rounded-2xl my-8">
+                        <p className="font-semibold text-2xl text-center py-4 italic text-teal-700 dark:text-teal-300">
+                          "Strong minds. Stronger futures."
+                        </p>
+                      </div>
+                      
+                      <div className="mt-8 p-6 bg-teal-50 dark:bg-teal-900/20 rounded-2xl">
+                        <h4 className="font-semibold text-xl mb-4 text-center">What Sets Us Apart</h4>
+                        <ul className="space-y-3 text-sm">
+                          <li className="flex items-start gap-3">
+                            <span className="text-teal-600 font-bold">✓</span>
+                            <span><strong>AI + Human Support:</strong> Combine instant AI assistance with access to real therapists</span>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <span className="text-teal-600 font-bold">✓</span>
+                            <span><strong>Student-Centric Design:</strong> Built specifically for the unique challenges students face</span>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <span className="text-teal-600 font-bold">✓</span>
+                            <span><strong>Evidence-Based Approach:</strong> All tools backed by clinical research and therapeutic best practices</span>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <span className="text-teal-600 font-bold">✓</span>
+                            <span><strong>Complete Anonymity:</strong> Share without fear of judgment or stigma</span>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <span className="text-teal-600 font-bold">✓</span>
+                            <span><strong>Affordable Care:</strong> Free tier available, premium plans starting at just $9.99/month</span>
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </section>
 
-                {/* Mobile Menu Button */}
-                <button
-                  className="md:hidden text-2xl"
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                >
-                  {mobileMenuOpen ? '✕' : '☰'}
-                </button>
-              </div>
-
-              {/* Mobile Menu */}
-              {mobileMenuOpen && (
-                <div className="md:hidden mt-4 space-y-3 pb-4">
-                  {['home', 'features', 'about'].map(section => (
+              {/* Download Section */}
+              <section className="py-16 sm:py-20 px-4 sm:px-6 relative z-10">
+                <div className="max-w-4xl mx-auto text-center space-y-8">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                    Start Your Journey Today
+                  </h2>
+                  <p className="text-lg sm:text-xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
+                    Join over 100,000 students who have found peace, support, and growth with Serenity. Available on all platforms.
+                  </p>
+                  <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 sm:gap-6">
                     <button
-                      key={section}
-                      onClick={() => scrollToSection(section)}
-                      className="block w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 capitalize"
+                      className="btn-3d px-6 sm:px-8 py-3 sm:py-4 rounded-full text-white font-semibold text-base sm:text-lg"
+                      style={{ background: 'linear-gradient(135deg, #91F291, #61F2C2)' }}
+                      onClick={triggerConfetti}
                     >
-                      {section}
+                      📱 Download for iOS
                     </button>
-                  ))}
-                  <button
-                    onClick={() => { setCalmMode(!calmMode); setMobileMenuOpen(false); }}
-                    className="block w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100"
-                  >
-                    {calmMode ? '🌊 Calm Mode On' : '🌊 Calm Mode'}
-                  </button>
+                    <button
+                      className="btn-3d px-6 sm:px-8 py-3 sm:py-4 rounded-full text-white font-semibold text-base sm:text-lg"
+                      style={{ background: 'linear-gradient(135deg, #61F2C2, #91F291)' }}
+                      onClick={triggerConfetti}
+                    >
+                      🤖 Download for Android
+                    </button>
+                    <button
+                      className="btn-3d px-6 sm:px-8 py-3 sm:py-4 rounded-full text-white font-semibold text-base sm:text-lg"
+                      style={{ background: 'linear-gradient(135deg, #7FE8B8, #91F291)' }}
+                      onClick={triggerConfetti}
+                    >
+                      💻 Access Web App
+                    </button>
+                  </div>
+                  
+                  <div className="mt-12 glass-card p-6 sm:p-8 max-w-2xl mx-auto">
+                    <h3 className="text-xl font-semibold mb-4">What Students Are Saying</h3>
+                    <div className="space-y-4 text-left">
+                      <div className="bg-white dark:bg-gray-800/50 p-4 rounded-lg">
+                        <p className="text-sm italic mb-2">"Serenity helped me through my toughest semester. The AI chatbot is incredibly understanding."</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">— Sarah M., Psychology Student</p>
+                      </div>
+                      <div className="bg-white dark:bg-gray-800/50 p-4 rounded-lg">
+                        <p className="text-sm italic mb-2">"Having access to a real therapist when I needed it most changed my life. Thank you Serenity!"</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">— James K., Engineering Student</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-          </nav>
+              </section>
 
-          {/* Hero Section */}
-          <section id="home" className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-20 relative z-10">
-            <div className="max-w-5xl w-full text-center space-y-8 fade-in">
-              <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold bg-gradient-to-r from-green-600 via-teal-600 to-blue-600 bg-clip-text text-transparent leading-tight">
-                Your Journey to Inner Peace Starts Here
-              </h1>
-              
-              {/* --- CHATBOT IS EMBEDDED HERE and old paragraph is removed --- */}
-              <div className="max-w-3xl mx-auto mt-12">
-                  <Chatbot />
-              </div>
+              {/* Footer */}
+              <footer className="py-8 text-center glass-card" style={{ margin: 0, borderRadius: 0 }}>
+                <div className="space-y-4">
+                  <p className="text-gray-600">
+                    © 2025 Serenity • Mental Health Support for Students
+                  </p>
+                  <div className="flex justify-center gap-6 text-sm">
+                    <a href="#" className="hover:text-teal-600 transition">Privacy Policy</a>
+                    <a href="#" className="hover:text-teal-600 transition">Terms of Service</a>
+                    <a href="#" className="hover:text-teal-600 transition">Contact Us</a>
+                    <a href="#" className="hover:text-teal-600 transition">Crisis Hotline: 988</a>
+                  </div>
+                  <p className="text-xs text-gray-500 max-w-2xl mx-auto px-4">
+                    If you're experiencing a mental health crisis, please contact the 988 Suicide & Crisis Lifeline or your local emergency services immediately.
+                  </p>
+                </div>
+              </footer>
 
-              {/* --- The old Mood Tracker buttons are removed --- */}
-
-              {/* Daily Affirmation */}
-              <div className="glass-card p-6 sm:p-8 max-w-2xl mx-auto slide-up" style={{ animationDelay: '0.2s' }}>
-                <p className="text-xs sm:text-sm uppercase tracking-wider text-teal-600 dark:text-teal-400 mb-2">
-                  ✨ Daily Affirmation
-                </p>
-                <p className="text-xl sm:text-2xl font-medium italic">"{affirmations[affirmationIndex]}"</p>
-              </div>
-            </div>
-          </section>
-
-          {/* Features Section */}
-          <section id="features" className="py-16 sm:py-20 px-4 sm:px-6 relative z-10">
-            <div className="max-w-7xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-4 bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-                What We Offer
-              </h2>
-              <p className="text-center text-gray-600 dark:text-gray-400 mb-12 sm:mb-16 max-w-2xl mx-auto">
-                Comprehensive mental health tools and support designed to help you thrive
-              </p>
-              
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-                {[
-                  {
-                    title: 'AI Chatbot',
-                    desc: 'Our advanced AI understands your emotions and responds with genuine empathy and personalized support 24/7.',
-                    details: 'Powered by emotion detection algorithms, contextual understanding, and compassionate response generation.',
-                    icon: (
-                      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                      </svg>
-                    )
-                  },
-                  {
-                    title: 'Guided Exercises',
-                    desc: 'Evidence-based breathing techniques, journaling prompts, and mindfulness practices tailored to your needs.',
-                    details: 'Includes 4-7-8 breathing, body scan meditation, gratitude journaling, and progressive muscle relaxation.',
-                    icon: (
-                      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )
-                  },
-                  {
-                    title: 'Live Counselor',
-                    desc: 'Connect instantly with certified mental health professionals for real-time support when you need it most.',
-                    details: 'Licensed therapists and counselors available for video calls, voice calls, or text chat sessions.',
-                    icon: (
-                      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                    )
-                  },
-                  {
-                    title: 'Community Support',
-                    desc: 'Join safe, anonymous peer groups where you can share experiences and connect with others who understand.',
-                    details: 'Moderated discussion groups for anxiety, stress, depression, academic pressure, and general wellness.',
-                    icon: (
-                      <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                    )
-                  }
-                ].map((feature, i) => (
-                  <div
-                    key={feature.title}
-                    className="neumorphic p-6 sm:p-8 cursor-pointer slide-up group"
-                    style={{ animationDelay: `${i * 0.1}s` }}
+              {/* Modal */}
+              <div className={`modal ${showModal ? 'active' : ''}`} onClick={() => setShowModal(false)}>
+                <div className="modal-content glass-card" onClick={e => e.stopPropagation()}>
+                  <button
+                    className="absolute top-4 right-4 text-3xl hover:scale-110 transition"
+                    onClick={() => setShowModal(false)}
+                  >
+                    ×
+                  </button>
+                  <h3 className="text-2xl sm:text-3xl font-bold mb-4 bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                    {modalContent.title}
+                  </h3>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+                    {modalContent.desc}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+                    {modalContent.details}
+                  </p>
+                  <button
+                    className="btn-3d px-8 py-3 rounded-full text-white font-semibold w-full sm:w-auto"
+                    style={{ background: 'linear-gradient(135deg, #91F291, #61F2C2)' }}
                     onClick={() => {
-                      openModal(feature);
-                      completeTask('feature_explore');
+                      setShowModal(false);
+                      completeTask('modal_interaction');
+
+                      if (modalContent.title === "Live Counselor") {
+                          window.location.href = "http://127.0.0.1:5500/talktocouncler.html";
+                      } else if (modalContent.title === "Community Support") {
+                          window.location.href = "https://glistening-concha-24a4c7.netlify.app/";
+                      } else if (modalContent.title === "AI Chatbot") {
+                          window.location.href = "http://10.32.32.38:5000/";
+                      } else if (modalContent.title === "Guided Exercises") {
+                          window.location.href = "http://127.0.0.1:5500/guiding%20ex.html";
+                                            } else if (modalContent.title === "Mind Analyzer") {
+                          window.location.href = "http://127.0.0.1:5500/mindcalm2.html";
+                      }
                     }}
                   >
-                    <div className="text-teal-600 dark:text-teal-400 mb-4 transform group-hover:scale-110 transition">
-                      {feature.icon}
-                    </div>
-                    <h3 className="text-xl font-semibold mb-3 group-hover:text-teal-600 transition">
-                      {feature.title}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-                      {feature.desc}
-                    </p>
-                    <button className="mt-4 text-sm font-medium text-teal-600 hover:text-teal-700 flex items-center gap-1">
-                      Learn More 
-                      <span className="transform group-hover:translate-x-1 transition">→</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Additional Features */}
-              <div className="mt-16 grid md:grid-cols-3 gap-8">
-                {[
-                  { icon: '📊', title: 'Progress Tracking', desc: 'Visual insights into your mental health journey with detailed analytics and trends.' },
-                  { icon: '🎯', title: 'Goal Setting', desc: 'Set and achieve personal wellness goals with our smart reminder system.' },
-                  { icon: '🔒', title: 'Complete Privacy', desc: 'End-to-end encryption ensures your conversations remain completely confidential.' }
-                ].map((item, i) => (
-                  <div key={item.title} className="glass-card p-6 text-center slide-up" style={{ animationDelay: `${i * 0.15}s` }}>
-                    <div className="text-4xl mb-3">{item.icon}</div>
-                    <h4 className="font-semibold text-lg mb-2">{item.title}</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{item.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* About Section */}
-          <section id="about" className="py-16 sm:py-20 px-4 sm:px-6 relative z-10">
-            <div className="max-w-5xl mx-auto">
-              <div className="glass-card p-8 sm:p-12 slide-up">
-                <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-                  Why Serenity?
-                </h2>
-                
-                <div className="space-y-6 text-base sm:text-lg text-gray-700 dark:text-gray-300">
-                  <p className="leading-relaxed">
-                    Founded in 2025, <strong>Serenity</strong> emerged from a deep understanding of the mental health crisis facing students worldwide. Our founders, a team of mental health professionals and technologists, recognized that traditional support systems weren't meeting the needs of the digital generation.
-                  </p>
-                  
-                  <div className="bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 p-6 rounded-2xl my-8">
-                    <p className="font-semibold text-2xl text-center py-4 italic text-teal-700 dark:text-teal-300">
-                      "Healing starts with a conversation."
-                    </p>
-                  </div>
-                  
-                  <p className="leading-relaxed">
-                    We combine <strong>cutting-edge AI technology</strong> with <strong>evidence-based therapeutic practices</strong> to create a platform that's accessible, stigma-free, and truly understanding. Whether you're dealing with academic stress, social anxiety, depression, or just need someone to listen, we're here 24/7.
-                  </p>
-                  
-                  <div className="grid sm:grid-cols-2 gap-6 my-8">
-                    <div className="bg-white dark:bg-gray-800/50 p-6 rounded-2xl shadow-lg">
-                      <h4 className="font-semibold text-xl mb-3 text-teal-600">Our Mission</h4>
-                      <p className="text-sm">To democratize mental health support by providing accessible, affordable, and effective care to every student who needs it.</p>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800/50 p-6 rounded-2xl shadow-lg">
-                      <h4 className="font-semibold text-xl mb-3 text-teal-600">Our Vision</h4>
-                      <p className="text-sm">A world where every student has the tools and support to maintain excellent mental health throughout their academic journey and beyond.</p>
-                    </div>
-                  </div>
-                  
-                  <p className="leading-relaxed">
-                    Our platform has already helped <strong>over 100,000 students</strong> across 50 countries manage their mental health effectively. We've facilitated more than 2 million therapy sessions and maintained a 95% satisfaction rate among our users.
-                  </p>
-                  
-                  <div className="bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 p-6 rounded-2xl my-8">
-                    <p className="font-semibold text-2xl text-center py-4 italic text-teal-700 dark:text-teal-300">
-                      "Strong minds. Stronger futures."
-                    </p>
-                  </div>
-                  
-                  <div className="mt-8 p-6 bg-teal-50 dark:bg-teal-900/20 rounded-2xl">
-                    <h4 className="font-semibold text-xl mb-4 text-center">What Sets Us Apart</h4>
-                    <ul className="space-y-3 text-sm">
-                      <li className="flex items-start gap-3">
-                        <span className="text-teal-600 font-bold">✓</span>
-                        <span><strong>AI + Human Support:</strong> Combine instant AI assistance with access to real therapists</span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-teal-600 font-bold">✓</span>
-                        <span><strong>Student-Centric Design:</strong> Built specifically for the unique challenges students face</span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-teal-600 font-bold">✓</span>
-                        <span><strong>Evidence-Based Approach:</strong> All tools backed by clinical research and therapeutic best practices</span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-teal-600 font-bold">✓</span>
-                        <span><strong>Complete Anonymity:</strong> Share without fear of judgment or stigma</span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-teal-600 font-bold">✓</span>
-                        <span><strong>Affordable Care:</strong> Free tier available, premium plans starting at just $9.99/month</span>
-                      </li>
-                    </ul>
-                  </div>
+                    Get Started with {modalContent.title}
+                  </button>
                 </div>
               </div>
-            </div>
-          </section>
-
-          {/* Download Section */}
-          <section className="py-16 sm:py-20 px-4 sm:px-6 relative z-10">
-            <div className="max-w-4xl mx-auto text-center space-y-8">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-                Start Your Journey Today
-              </h2>
-              <p className="text-lg sm:text-xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
-                Join over 100,000 students who have found peace, support, and growth with Serenity. Available on all platforms.
-              </p>
-              <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 sm:gap-6">
-                <button
-                  className="btn-3d px-6 sm:px-8 py-3 sm:py-4 rounded-full text-white font-semibold text-base sm:text-lg"
-                  style={{ background: 'linear-gradient(135deg, #91F291, #61F2C2)' }}
-                  onClick={triggerConfetti}
-                >
-                  📱 Download for iOS
-                </button>
-                <button
-                  className="btn-3d px-6 sm:px-8 py-3 sm:py-4 rounded-full text-white font-semibold text-base sm:text-lg"
-                  style={{ background: 'linear-gradient(135deg, #61F2C2, #91F291)' }}
-                  onClick={triggerConfetti}
-                >
-                  🤖 Download for Android
-                </button>
-                <button
-                  className="btn-3d px-6 sm:px-8 py-3 sm:py-4 rounded-full text-white font-semibold text-base sm:text-lg"
-                  style={{ background: 'linear-gradient(135deg, #7FE8B8, #91F291)' }}
-                  onClick={triggerConfetti}
-                >
-                  💻 Access Web App
-                </button>
-              </div>
-              
-              <div className="mt-12 glass-card p-6 sm:p-8 max-w-2xl mx-auto">
-                <h3 className="text-xl font-semibold mb-4">What Students Are Saying</h3>
-                <div className="space-y-4 text-left">
-                  <div className="bg-white dark:bg-gray-800/50 p-4 rounded-lg">
-                    <p className="text-sm italic mb-2">"Serenity helped me through my toughest semester. The AI chatbot is incredibly understanding."</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">— Sarah M., Psychology Student</p>
-                  </div>
-                  <div className="bg-white dark:bg-gray-800/50 p-4 rounded-lg">
-                    <p className="text-sm italic mb-2">"Having access to a real therapist when I needed it most changed my life. Thank you Serenity!"</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">— James K., Engineering Student</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Footer */}
-          <footer className="py-8 text-center glass-card" style={{ margin: 0, borderRadius: 0 }}>
-            <div className="space-y-4">
-              <p className="text-gray-600">
-                © 2025 Serenity • Mental Health Support for Students
-              </p>
-              <div className="flex justify-center gap-6 text-sm">
-                <a href="#" className="hover:text-teal-600 transition">Privacy Policy</a>
-                <a href="#" className="hover:text-teal-600 transition">Terms of Service</a>
-                <a href="#" className="hover:text-teal-600 transition">Contact Us</a>
-                <a href="#" className="hover:text-teal-600 transition">Crisis Hotline: 988</a>
-              </div>
-              <p className="text-xs text-gray-500 max-w-2xl mx-auto px-4">
-                If you're experiencing a mental health crisis, please contact the 988 Suicide & Crisis Lifeline or your local emergency services immediately.
-              </p>
-            </div>
-          </footer>
-
-          {/* Modal */}
-          <div className={`modal ${showModal ? 'active' : ''}`} onClick={() => setShowModal(false)}>
-            <div className="modal-content glass-card" onClick={e => e.stopPropagation()}>
-              <button
-                className="absolute top-4 right-4 text-3xl hover:scale-110 transition"
-                onClick={() => setShowModal(false)}
-              >
-                ×
-              </button>
-              <h3 className="text-2xl sm:text-3xl font-bold mb-4 bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-                {modalContent.title}
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-                {modalContent.desc}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-                {modalContent.details}
-              </p>
-              <button
-                className="btn-3d px-8 py-3 rounded-full text-white font-semibold w-full sm:w-auto"
-                style={{ background: 'linear-gradient(135deg, #91F291, #61F2C2)' }}
-                onClick={() => {
-                  setShowModal(false);
-                  completeTask('modal_interaction');
-
-                 if (modalContent.title === "Live Counselor") {
-    window.location.href = "http://127.0.0.1:5500/talktocouncler.html";
-} else if (modalContent.title === "Community Support") {
-    window.location.href = "https://glistening-concha-24a4c7.netlify.app/";
-} else if (modalContent.title === "AI Chatbot") {
-    window.location.href = "http://127.0.0.1:5500/mainfile.html";
-} else if (modalContent.title === "Guided Exercises") {
-    window.location.href = "http://127.0.0.1:5500/guiding%20ex.html";
-
-                  
-                  }
-                }}
-              >
-                Get Started with {modalContent.title}
-              </button>
-            </div>
-          </div>
+            </>
+        )}
         </>
       );
     }
