@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SereneMind - Mental Health Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="chat-header">
+            <div class="header-content">
+                <h1>🌿 SereneMind</h1>
+                <p>Your compassionate mental health companion</p>
+            </div>
+            <div class="status-indicator" id="statusIndicator">
+                <span class="status-dot"></span>
+                Online
+            </div>
+        </header>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <p>Hello there! I'm SereneMind, your mental health companion. I'm here to listen and support you in a safe, non-judgmental space. You can share anything that's on your mind, and I'll be here to help with compassionate responses and gentle guidance.</p>
+                        <p>What would you like to talk about today?</p>
+                    </div>
+                    <div class="message-time" id="initialTime"></div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <p>SereneMind is thinking...</p>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <div class="input-wrapper">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    placeholder="Share what's on your mind..." 
+                    maxlength="500"
+                >
+                <button id="sendButton">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="currentColor"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="input-hint">
+                Press Enter to send • Type 'quit' to end conversation
+            </div>
+        </div>
+
+        <div class="safety-notice">
+            <p>💙 Remember: This is an AI companion, not a replacement for professional mental healthcare. If you're in crisis, please contact emergency services or a mental health hotline.</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
